@@ -1,4 +1,3 @@
-import newspaper
 from newspaper import Article
 
 def get_content(url):
@@ -7,4 +6,3 @@ def get_content(url):
     article.parse()
     
     return article.text
-
