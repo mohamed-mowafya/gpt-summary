@@ -1,18 +1,20 @@
 import os
 import openai
 import re
-from helpers import article_helper
 import validators
-from enums.prompt_type import PromptType
 
-MESSAGES = [{"role": "system", "content": PromptType.GPT_PROMPT.value}]
+from enums.prompt_type import PromptType
+from enums.roles_type import RolesType
+from helpers import article_helper
+
+MESSAGES = [{"role": RolesType.SYSTEM.value, "content": PromptType.GPT_PROMPT.value}]
 GPT_PROMPT_LIMIT = 4097
 
 def _get_url(message):
     """
     Function that extracts a url from a message, using regex.
     """
-    regex = "(?P<non_url>.*?)(?P<url>https?://[^\s]+)"
+    regex = "(?P<non_url>.*?)(?P<url>https?://[^\s]+)" # Regex to extract urls from strings
 
     match = re.search(regex, message)
     url_text = ""
@@ -35,7 +37,7 @@ def _ask_gpt():
     return completion
 
 def _handle_gpt_limit(long_string):
-    # Split long string into list of substrings
+    # Split long string into list of substrings, using GPT's limit
     substrings = [long_string[i:i+GPT_PROMPT_LIMIT] for i in range(0, len(long_string), GPT_PROMPT_LIMIT)]
     return substrings
 
@@ -53,11 +55,11 @@ def prompt(json_obj):
         if len(web_content) > GPT_PROMPT_LIMIT: # Avoiding prompt limit error from OpenAI's API.
             substr_lst = _handle_gpt_limit(web_content)
             for substr in substr_lst:
-                MESSAGES.append({"role": "user", "content": substr})
+                MESSAGES.append({"role": RolesType.USER.value, "content": substr})
         else:
             user_content += web_content
 
-    MESSAGES.append({"role": "user", "content": user_content})
+    MESSAGES.append({"role": RolesType.USER.value, "content": user_content})
     
     completion = _ask_gpt()
 
