@@ -1,7 +1,7 @@
 import os
 import openai
 import re
-from helpers import web_scraper_helper
+from helpers import article_helper
 import validators
 from enums.prompt_type import PromptType
 
@@ -34,6 +34,11 @@ def _ask_gpt():
     )
     return completion
 
+def _handle_gpt_limit(long_string):
+    # Split long string into list of substrings
+    substrings = [long_string[i:i+GPT_PROMPT_LIMIT] for i in range(0, len(long_string), GPT_PROMPT_LIMIT)]
+    return substrings
+
 def prompt(json_obj):
     """
     Main helper function that takes care of the logic, depending on user input.
@@ -44,11 +49,13 @@ def prompt(json_obj):
     user_content = non_url_text
 
     if validators.url(possible_url):
-        web_content = web_scraper_helper.get_content(possible_url)
-        if len(web_content) > GPT_PROMPT_LIMIT:
-            web_content = web_content[:GPT_PROMPT_LIMIT - len(user_content)]
-
-        user_content+= web_content
+        web_content = article_helper.get_content(possible_url)
+        if len(web_content) > GPT_PROMPT_LIMIT: # Avoiding prompt limit error from OpenAI's API.
+            substr_lst = _handle_gpt_limit(web_content)
+            for substr in substr_lst:
+                MESSAGES.append({"role": "user", "content": substr})
+        else:
+            user_content += web_content
 
     MESSAGES.append({"role": "user", "content": user_content})
     
